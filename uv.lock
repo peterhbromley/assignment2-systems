@@ -17,6 +17,45 @@ wheels = [
 ]
 
 [[package]]
+name = "basics"
+version = "26.0.0"
+source = { editable = "basics" }
+dependencies = [
+    { name = "einops" },
+    { name = "einx" },
+    { name = "jaxtyping" },
+    { name = "numpy" },
+    { name = "psutil" },
+    { name = "pytest" },
+    { name = "pytest-timeout" },
+    { name = "regex" },
+    { name = "ruff" },
+    { name = "tiktoken" },
+    { name = "torch" },
+    { name = "tqdm" },
+    { name = "ty" },
+    { name = "wandb" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "einops", specifier = ">=0.8" },
+    { name = "einx", specifier = ">=0.4" },
+    { name = "jaxtyping", specifier = ">=0.3" },
+    { name = "numpy", specifier = ">=2.4" },
+    { name = "psutil", specifier = ">=7" },
+    { name = "pytest", specifier = ">=9.0" },
+    { name = "pytest-timeout" },
+    { name = "regex", specifier = ">=2026.3.32" },
+    { name = "ruff", specifier = ">=0.15.8" },
+    { name = "tiktoken", specifier = ">=0.12.0" },
+    { name = "torch", specifier = "~=2.11.0" },
+    { name = "tqdm", specifier = ">=4.67" },
+    { name = "ty", specifier = ">=0.0.26" },
+    { name = "wandb", specifier = ">=0.25" },
+]
+
+[[package]]
 name = "certifi"
 version = "2026.2.25"
 source = { registry = "https://pypi.org/simple" }
@@ -132,51 +171,13 @@ wheels = [
 ]
 
 [[package]]
-name = "cs336-basics"
-version = "26.0.4"
-source = { editable = "cs336-basics" }
-dependencies = [
-    { name = "einops" },
-    { name = "einx" },
-    { name = "jaxtyping" },
-    { name = "numpy" },
-    { name = "psutil" },
-    { name = "pytest" },
-    { name = "pytest-timeout" },
-    { name = "regex" },
-    { name = "ruff" },
-    { name = "tiktoken" },
-    { name = "torch" },
-    { name = "tqdm" },
-    { name = "ty" },
-    { name = "wandb" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "einops", specifier = ">=0.8" },
-    { name = "einx", specifier = ">=0.4" },
-    { name = "jaxtyping", specifier = ">=0.3" },
-    { name = "numpy", specifier = ">=2.4" },
-    { name = "psutil", specifier = ">=7" },
-    { name = "pytest", specifier = ">=9.0" },
-    { name = "pytest-timeout" },
-    { name = "regex", specifier = ">=2026.3.32" },
-    { name = "ruff", specifier = ">=0.15.8" },
-    { name = "tiktoken", specifier = ">=0.12.0" },
-    { name = "torch", specifier = "~=2.11.0" },
-    { name = "tqdm", specifier = ">=4.67" },
-    { name = "ty", specifier = ">=0.0.26" },
-    { name = "wandb", specifier = ">=0.25" },
-]
-
-[[package]]
 name = "cs336-systems"
 version = "26.1.4"
 source = { editable = "." }
 dependencies = [
-    { name = "cs336-basics" },
+    { name = "basics" },
     { name = "humanfriendly" },
+    { name = "jaxtyping" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
@@ -191,8 +192,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cs336-basics", editable = "cs336-basics" },
+    { name = "basics", editable = "basics" },
     { name = "humanfriendly" },
+    { name = "jaxtyping", specifier = ">=0.3" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas", specifier = ">=2" },
