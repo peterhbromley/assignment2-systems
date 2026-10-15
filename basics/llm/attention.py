@@ -1,8 +1,10 @@
+from contextlib import nullcontext
 from math import sqrt
 
 from einops import einsum, rearrange
 from jaxtyping import Bool, Float, Int
 import torch
+from torch.cuda import nvtx
 from torch import Tensor, nn
 
 from llm.functional import softmax
@@ -15,19 +17,38 @@ def scaled_dot_product_attention(
     K: Float[Tensor, " ... keys d_k"],
     V: Float[Tensor, " ... keys d_v"],
     mask: Bool[Tensor, " ... queries keys"] | None = None,
+    profile: bool=False,
 ) -> Float[Tensor, " ... queries d_v"]:
-    # Get d_k from last dim of Q matrix
-    d_k = Q.shape[-1]
+    def profile_range(label: str):
+        return nvtx.range(label) if profile else nullcontext()
 
-    # Scaled attention tensor scores matrix is QK^T / sqrt(d_k)
-    scores = einsum(Q, K, "... queries d_k, ... keys d_k -> ... queries keys") / sqrt(d_k)
+    with profile_range("scaled_dot_product_attention"):
+        # Get d_k from last dim of Q matrix
+        d_k = Q.shape[-1]
 
-    # Put -inf in matrix positions that can't be attended to (e.g. token comes after
-    # current token). -inf will become 0 after softmax.
-    if mask is not None:
-        scores = torch.masked_fill(scores, ~mask, -torch.inf)
+        with profile_range("qk_matmul"):
+            # Scaled attention tensor scores matrix is QK^T / sqrt(d_k).
+            # Isolate the matmul here for profiling, scale outside of the
+            # profiling range.
+            scores = einsum(
+                Q, 
+                K, 
+                "... queries d_k, ... keys d_k -> ... queries keys"
+            ) 
 
-    return einsum(softmax(scores, dim=-1), V, "... queries keys, ... keys d_v -> ... queries d_v")
+        # Scale the attention scores.
+        scores = scores / sqrt(d_k) 
+
+        # Put -inf in matrix positions that can't be attended to (e.g. token comes after
+        # current token). -inf will become 0 after softmax.
+        if mask is not None:
+            scores = torch.masked_fill(scores, ~mask, -torch.inf)
+
+        with profile_range("compute_softmax"):
+            probabs = softmax(scores, dim=-1)
+
+        with profile_range("final_matmul"):
+            return einsum(probabs, V, "... queries keys, ... keys d_v -> ... queries d_v")
 
 
 class CausalMultiHeadSelfAttention(nn.Module):
@@ -38,6 +59,7 @@ class CausalMultiHeadSelfAttention(nn.Module):
         rope: RotaryPositionalEmbeddings | None = None,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
+        profile: bool=False,
     ):
         super().__init__()
 
@@ -54,6 +76,7 @@ class CausalMultiHeadSelfAttention(nn.Module):
 
         self.rope = rope
         self.num_heads = num_heads
+        self.profile = profile
 
     def forward(
         self,
@@ -95,7 +118,7 @@ class CausalMultiHeadSelfAttention(nn.Module):
             torch.ones((seq_len, seq_len), device=device, dtype=torch.bool),
             diagonal=0,
         )
-        mha = scaled_dot_product_attention(Q, K, V, mask)
+        mha = scaled_dot_product_attention(Q, K, V, mask, self.profile)
 
         # After attention, need to reshape for expected W_O input dim of h*d_v
         mha = rearrange(mha, "... h seq_len d_v -> ... seq_len (h d_v)")

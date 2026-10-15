@@ -19,6 +19,7 @@ class TransformerBlock(nn.Module):
         rope: RotaryPositionalEmbeddings | None = None,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
+        profile: bool=False,
     ):
         super().__init__()
 
@@ -34,6 +35,7 @@ class TransformerBlock(nn.Module):
             rope=rope,
             device=device,
             dtype=dtype,
+            profile=profile,
         )
         self.ln1 = RMSNorm(d_model, device=device, dtype=dtype)
         self.ln2 = RMSNorm(d_model, device=device, dtype=dtype)
@@ -51,6 +53,7 @@ class Transformer(nn.Module):
         *,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
+        profile: bool=False,
     ) -> "Transformer":
         """Construct from architecture settings, ignoring other training settings."""
         return cls(
@@ -63,6 +66,7 @@ class Transformer(nn.Module):
             theta=config["rope_theta"],
             device=device,
             dtype=dtype,
+            profile=profile,
         )
 
     def __init__(
@@ -76,13 +80,22 @@ class Transformer(nn.Module):
         theta: int,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
+        profile: bool=False,
     ):
         super().__init__()
         self.token_embeddings = Embedding(vocab_size, d_model, device=device, dtype=dtype)
         rope = RotaryPositionalEmbeddings(theta, d_model // num_heads, context_length, device=device)
         self.layers = nn.ModuleList(
             [
-                TransformerBlock(d_model, num_heads, d_ff, rope=rope, device=device, dtype=dtype)
+                TransformerBlock(
+                    d_model, 
+                    num_heads, 
+                    d_ff, 
+                    rope=rope, 
+                    device=device, 
+                    dtype=dtype, 
+                    profile=profile,
+                )
                 for _ in range(num_layers)
             ]
         )
